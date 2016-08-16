@@ -21,6 +21,14 @@ addons:
   # operator). Travis claims that version 9.4 is installed by default, but it
   # claims that && is unknown unless this addon is here.
   postgresql: "9.4"
+  apt:
+    packages:
+      # These are build dependencies for the documentation; LaTeX is required
+      # for rendering math. These are the required packages for Ubuntu 12.04,
+      # Travis' current build environment!
+      - texlive-latex-base
+      - texlive-latex-extra
+      - dvipng
 
 
 before_install:
@@ -32,14 +40,19 @@ before_install:
     else
         export REQUIREMENTS=requirements-test-cpython.txt
     fi
-  - pip install --upgrade pip
 
 install:
+  - pip install --upgrade pip
   - pip install -r $REQUIREMENTS
-  - pip install coveralls
+  - pip install flake8 coveralls
 
 script:
-  coverage run --source=flask_restless setup.py test
+  # Code style checks.
+  - find flask_restless/ tests/ examples/ setup.py -type f -name \*.py -print0 | xargs -0 flake8
+  # Documentation build checks.
+  - sphinx-build -n -W doc/ build/sphinx/html/
+  # Unit tests.
+  - coverage run --source=flask_restless setup.py test
 
 after_success:
   coveralls
